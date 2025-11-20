@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Formação de Grupos Combinados{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card p-3 mb-3">
+      <h1 class="h4 mb-2">Grupos combinados</h1>
+      <p class="text-secondary small mb-1">
+        Turmas combinadas:
+        <strong>{{ turma_ids | join(', ') }}</strong>
+      </p>
+      <p class="text-secondary small">
+        Monte grupos misturando alunos de diferentes turmas. A turma de origem
+        de cada aluno será mantida nos arquivos exportados.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Alunos sem grupo</h2>
+        <span class="badge bg-secondary" id="contador-alunos">
+          {{ alunos|length }} alunos
+        </span>
+      </div>
+      <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+        <table class="table table-sm table-dark align-middle" id="tabela-alunos">
+          <thead>
+          <tr>
+            <th style="width: 40px;"></th>
+            <th>Matrícula</th>
+            <th>Nome</th>
+            <th>Turma</th>
+          </tr>
+          </thead>
+          <tbody>
+          {% for a in alunos %}
+            <tr data-matricula="{{ a.matricula }}"
+                data-nome="{{ a.nome }}"
+                data-turma="{{ a.turma_id }}">
+              <td><input type="checkbox" class="form-check-input aluno-checkbox"></td>
+              <td>{{ a.matricula }}</td>
+              <td>{{ a.nome }}</td>
+              <td><span class="badge bg-dark">{{ a.turma_id }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Grupos / Equipes (combinados)</h2>
+        <button class="btn btn-sm btn-primary" id="btn-novo-grupo">
+          ➕ Novo grupo
+        </button>
+      </div>
+
+      <div id="area-grupos" class="row g-3" style="overflow-y: auto; max-height: 55vh;">
+        <!-- Grupos via JS -->
+      </div>
+
+      <div class="mt-3 d-flex justify-content-end gap-2">
+        <button class="btn btn-outline-light btn-sm" id="btn-limpar-selecionados">
+          Desmarcar selecionados
+        </button>
+        <button class="btn btn-success" id="btn-salvar-grupos">
+          💾 Salvar grupos combinados e gerar arquivos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let proximoIdGrupo = 1;
+
+  function atualizarContadorAlunos() {
+    const qtd = document.querySelectorAll('#tabela-alunos tbody tr').length;
+    document.getElementById('contador-alunos').textContent = `${qtd} alunos`;
+  }
+
+  function criarCardGrupo(nomePadrao = null) {
+    const id = proximoIdGrupo++;
+    const nomeGrupo = nomePadrao || `Grupo ${id}`;
+    const area = document.getElementById('area-grupos');
+
+    const col = document.createElement('div');
+    col.className = 'col-md-6 group-col';
+    col.innerHTML = `
+      <div class="card group-card h-100" data-group-id="${id}">
+        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+          <input type="text" class="form-control form-control-sm group-name-input"
+                 value="${nomeGrupo}" />
+          <button type="button" class="btn btn-sm btn-outline-danger btn-remover-grupo">
+            ✕
+          </button>
+        </div>
+        <ul class="list-group list-group-flush group-members" style="max-height: 35vh; overflow-y: auto;">
+        </ul>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <small class="text-secondary small">
+            <span class="badge bg-secondary contador-membros">0</span> aluno(s)
+          </small>
+          <button type="button" class="btn btn-sm btn-primary btn-add-selecionados">
+            Adicionar selecionados
+          </button>
+        </div>
+      </div>
+    `;
+    area.appendChild(col);
+  }
+
+  function atualizarContadorMembros(card) {
+    const lista = card.querySelector('.group-members');
+    const contador = card.querySelector('.contador-membros');
+    const qtd = lista.querySelectorAll('li').length;
+    contador.textContent = qtd;
+  }
+
+  function adicionarSelecionadosAoGrupo(card) {
+    const tbody = document.querySelector('#tabela-alunos tbody');
+    const linhas = Array.from(tbody.querySelectorAll('tr'));
+    const lista = card.querySelector('.group-members');
+
+    linhas.forEach(tr => {
+      const checkbox = tr.querySelector('.aluno-checkbox');
+      if (checkbox && checkbox.checked) {
+        const matricula = tr.dataset.matricula;
+        const nome = tr.dataset.nome;
+        const turma = tr.dataset.turma;
+
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center';
+        li.dataset.matricula = matricula;
+        li.dataset.nome = nome;
+        li.dataset.turma = turma;
+        li.innerHTML = `
+          <div>
+            <div class="fw-semibold">${nome}</div>
+            <div class="text-secondary small">${matricula} — <span class="badge bg-dark">${turma}</span></div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-light btn-remover-membro">
+            Remover
+          </button>
+        `;
+        lista.appendChild(li);
+
+        tr.remove();
+      }
+    });
+
+    atualizarContadorAlunos();
+    atualizarContadorMembros(card);
+  }
+
+  function montarPayloadGrupos() {
+    const grupos = [];
+    const cards = document.querySelectorAll('.group-card');
+
+    cards.forEach(card => {
+      const nomeInput = card.querySelector('.group-name-input');
+      const nomeGrupo = (nomeInput.value || '').trim() || 'Grupo';
+      const membros = [];
+      card.querySelectorAll('.group-members li').forEach(li => {
+        membros.push({
+          matricula: li.dataset.matricula,
+          nome: li.dataset.nome,
+          turma_id: li.dataset.turma
+        });
+      });
+      if (membros.length > 0) {
+        grupos.push({
+          nome_grupo: nomeGrupo,
+          membros: membros
+        });
+      }
+    });
+
+    const naoAlocados = [];
+    document.querySelectorAll('#tabela-alunos tbody tr').forEach(tr => {
+      naoAlocados.push({
+        matricula: tr.dataset.matricula,
+        nome: tr.dataset.nome,
+        turma_id: tr.dataset.turma
+      });
+    });
+
+    return { grupos: grupos, nao_alocados: naoAlocados };
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // dois grupos padrão
+    criarCardGrupo('Grupo 1');
+    criarCardGrupo('Grupo 2');
+    atualizarContadorAlunos();
+
+    document.getElementById('btn-novo-grupo').addEventListener('click', () => {
+      criarCardGrupo();
+    });
+
+    document.getElementById('area-grupos').addEventListener('click', (event) => {
+      const target = event.target;
+
+      if (target.classList.contains('btn-add-selecionados')) {
+        const card = target.closest('.group-card');
+        adicionarSelecionadosAoGrupo(card);
+      }
+
+      if (target.classList.contains('btn-remover-grupo')) {
+        const card = target.closest('.group-card');
+        const membros = card.querySelectorAll('.group-members li');
+        const tbody = document.querySelector('#tabela-alunos tbody');
+
+        membros.forEach(li => {
+          const matricula = li.dataset.matricula;
+          const nome = li.dataset.nome;
+          const turma = li.dataset.turma;
+          const tr = document.createElement('tr');
+          tr.dataset.matricula = matricula;
+          tr.dataset.nome = nome;
+          tr.dataset.turma = turma;
+          tr.innerHTML = `
+            <td><input type="checkbox" class="form-check-input aluno-checkbox"></td>
+            <td>${matricula}</td>
+            <td>${nome}</td>
+            <td><span class="badge bg-dark">${turma}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        card.parentElement.remove();
+        atualizarContadorAlunos();
+      }
+
+      if (target.classList.contains('btn-remover-membro')) {
+        const li = target.closest('li');
+        const card = target.closest('.group-card');
+        const matricula = li.dataset.matricula;
+        const nome = li.dataset.nome;
+        const turma = li.dataset.turma;
+
+        const tbody = document.querySelector('#tabela-alunos tbody');
+        const tr = document.createElement('tr');
+        tr.dataset.matricula = matricula;
+        tr.dataset.nome = nome;
+        tr.dataset.turma = turma;
+        tr.innerHTML = `
+          <td><input type="checkbox" class="form-check-input aluno-checkbox"></td>
+          <td>${matricula}</td>
+          <td>${nome}</td>
+          <td><span class="badge bg-dark">${turma}</span></td>
+        `;
+        tbody.appendChild(tr);
+
+        li.remove();
+        atualizarContadorAlunos();
+        atualizarContadorMembros(card);
+      }
+    });
+
+    document.getElementById('btn-limpar-selecionados').addEventListener('click', () => {
+      document.querySelectorAll('.aluno-checkbox').forEach(cb => cb.checked = false);
+    });
+
+    document.getElementById('btn-salvar-grupos').addEventListener('click', () => {
+      const payload = montarPayloadGrupos();
+
+      if (payload.grupos.length === 0) {
+        alert("Nenhum grupo com membros foi definido.");
+        return;
+      }
+
+      fetch("{{ url_for('salvar_grupos_combinados', combo_id=combo_id) }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+      })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data.ok && data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            alert("Erro ao salvar grupos combinados.");
+          }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Erro ao comunicar com o servidor.");
+        });
+    });
+  });
+</script>
+{% endblock %}

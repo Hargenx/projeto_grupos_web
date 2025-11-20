@@ -1,0 +1,81 @@
+{% extends "base.html" %} {% block title %}Resultado dos Grupos{% endblock %} {%
+block content %}
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card p-3">
+      <h1 class="h4 mb-3">Grupos formados – Turma {{ turma_id }}</h1>
+
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <a
+          href="{{ url_for('download', turma_id=turma_id, filename='grupos.xlsx') }}"
+          class="btn btn-success btn-sm"
+        >
+          ⬇ Baixar XLSX
+        </a>
+        <a
+          href="{{ url_for('download', turma_id=turma_id, filename='grupos.csv') }}"
+          class="btn btn-outline-light btn-sm"
+        >
+          ⬇ Baixar CSV
+        </a>
+        <a
+          href="{{ url_for('download', turma_id=turma_id, filename='grupos.json') }}"
+          class="btn btn-outline-info btn-sm"
+        >
+          ⬇ Baixar JSON
+        </a>
+        <a
+          href="{{ url_for('grupos', turma_id=turma_id) }}"
+          class="btn btn-secondary btn-sm"
+        >
+          ↩ Voltar para editar grupos
+        </a>
+      </div>
+
+      {% if grupos %}
+      <div class="row g-3">
+        {% for grupo in grupos %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-header">
+              <strong
+                >{{ grupo.nome_grupo if grupo.nome_grupo is defined else
+                grupo.nome_grupo }}</strong
+              >
+            </div>
+            <ul class="list-group list-group-flush">
+              {% for m in grupo.membros %}
+              <li class="list-group-item">
+                <div class="fw-semibold">{{ m.nome }}</div>
+                <div class="text-secondary small">{{ m.matricula }}</div>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-secondary">Nenhum grupo encontrado nesta sessão.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if nao_alocados %}
+  <div class="col-12">
+    <div class="card p-3">
+      <h2 class="h5">Alunos não alocados</h2>
+      <p class="text-secondary small">Estes alunos permaneceram sem grupo:</p>
+      <ul class="list-group list-group-flush">
+        {% for a in nao_alocados %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ a.nome }}</span>
+          <span class="text-secondary small">{{ a.matricula }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

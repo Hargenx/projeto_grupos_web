@@ -1,0 +1,320 @@
+{% extends "base.html" %} {% block title %}Formação de Grupos{% endblock %} {%
+block head %}
+<meta name="csrf-token" content="" />
+{% endblock %} {% block content %}
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 mb-0">Alunos sem grupo</h2>
+        <span class="badge bg-secondary" id="contador-alunos">
+          {{ alunos|length }} alunos
+        </span>
+      </div>
+      <p class="text-secondary small">
+        Selecione os alunos e use o botão "Adicionar selecionados" em um grupo à
+        direita.
+      </p>
+      <div class="table-responsive" style="max-height: 60vh; overflow-y: auto">
+        <table
+          class="table table-sm table-dark align-middle"
+          id="tabela-alunos"
+        >
+          <thead>
+            <tr>
+              <th style="width: 40px"></th>
+              <th>Matrícula</th>
+              <th>Nome</th>
+            </tr>
+          </thead>
+          <tbody>
+            <h2 class="h5 mb-0">Grupos / Equipes – Turma {{ turma_id }}</h2>
+
+            {% for a in alunos %}
+            <tr data-matricula="{{ a.matricula }}" data-nome="{{ a.nome }}">
+              <td>
+                <input
+                  type="checkbox"
+                  class="form-check-input aluno-checkbox"
+                />
+              </td>
+              <td>{{ a.matricula }}</td>
+              <td>{{ a.nome }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card p-3 h-100 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Grupos / Equipes</h2>
+        <button class="btn btn-sm btn-primary" id="btn-novo-grupo">
+          ➕ Novo grupo
+        </button>
+      </div>
+
+      <p class="text-secondary small mb-2">
+        Crie grupos, dê nomes a eles (ex.: "Equipe 1", "Time A") e use
+        <strong>"Adicionar selecionados"</strong> para distribuir os alunos.
+      </p>
+
+      <div
+        id="area-grupos"
+        class="row g-3"
+        style="overflow-y: auto; max-height: 55vh"
+      >
+        <!-- Grupos são adicionados via JS -->
+      </div>
+
+      <div class="mt-3 d-flex justify-content-end gap-2">
+        <button
+          class="btn btn-outline-light btn-sm"
+          id="btn-limpar-selecionados"
+        >
+          Desmarcar selecionados
+        </button>
+        <button class="btn btn-success" id="btn-salvar-grupos">
+          💾 Salvar grupos e gerar arquivos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script>
+  const ALUNOS = {{ alunos|tojson }};
+</script>
+
+<script>
+  let proximoIdGrupo = 1;
+
+  function atualizarContadorAlunos() {
+    const qtd = document.querySelectorAll("#tabela-alunos tbody tr").length;
+    document.getElementById("contador-alunos").textContent = `${qtd} alunos`;
+  }
+
+  function criarCardGrupo(nomePadrao = null) {
+    const id = proximoIdGrupo++;
+    const nomeGrupo = nomePadrao || `Grupo ${id}`;
+    const area = document.getElementById("area-grupos");
+
+    const col = document.createElement("div");
+    col.className = "col-md-6 group-col";
+    col.innerHTML = `
+      <div class="card group-card h-100" data-group-id="${id}">
+        <div class="card-header d-flex align-items-center justify-content-between gap-2">
+          <input type="text" class="form-control form-control-sm group-name-input"
+                 value="${nomeGrupo}" />
+          <button type="button" class="btn btn-sm btn-outline-danger btn-remover-grupo">
+            ✕
+          </button>
+        </div>
+        <ul class="list-group list-group-flush group-members" style="max-height: 35vh; overflow-y: auto;">
+          <!-- membros aqui -->
+        </ul>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <small class="text-secondary small">
+            <span class="badge bg-secondary contador-membros">0</span> aluno(s)
+          </small>
+          <button type="button" class="btn btn-sm btn-primary btn-add-selecionados">
+            Adicionar selecionados
+          </button>
+        </div>
+      </div>
+    `;
+    area.appendChild(col);
+  }
+
+  function atualizarContadorMembros(card) {
+    const lista = card.querySelector(".group-members");
+    const contador = card.querySelector(".contador-membros");
+    const qtd = lista.querySelectorAll("li").length;
+    contador.textContent = qtd;
+  }
+
+  function adicionarSelecionadosAoGrupo(card) {
+    const tbody = document.querySelector("#tabela-alunos tbody");
+    const linhas = Array.from(tbody.querySelectorAll("tr"));
+    const lista = card.querySelector(".group-members");
+
+    linhas.forEach((tr) => {
+      const checkbox = tr.querySelector(".aluno-checkbox");
+      if (checkbox && checkbox.checked) {
+        const matricula = tr.dataset.matricula;
+        const nome = tr.dataset.nome;
+
+        const li = document.createElement("li");
+        li.className =
+          "list-group-item d-flex justify-content-between align-items-center";
+        li.dataset.matricula = matricula;
+        li.dataset.nome = nome;
+        li.innerHTML = `
+          <div>
+            <div class="fw-semibold">${nome}</div>
+            <div class="text-secondary small">${matricula}</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-light btn-remover-membro">
+            Remover
+          </button>
+        `;
+        lista.appendChild(li);
+
+        tr.remove();
+      }
+    });
+
+    atualizarContadorAlunos();
+    atualizarContadorMembros(card);
+  }
+
+  function montarPayloadGrupos() {
+    const grupos = [];
+    const cards = document.querySelectorAll(".group-card");
+
+    cards.forEach((card) => {
+      const nomeInput = card.querySelector(".group-name-input");
+      const nomeGrupo = (nomeInput.value || "").trim() || "Grupo";
+      const membros = [];
+      card.querySelectorAll(".group-members li").forEach((li) => {
+        membros.push({
+          matricula: li.dataset.matricula,
+          nome: li.dataset.nome,
+        });
+      });
+      if (membros.length > 0) {
+        grupos.push({
+          nome_grupo: nomeGrupo,
+          membros: membros,
+        });
+      }
+    });
+
+    const naoAlocados = [];
+    document.querySelectorAll("#tabela-alunos tbody tr").forEach((tr) => {
+      naoAlocados.push({
+        matricula: tr.dataset.matricula,
+        nome: tr.dataset.nome,
+      });
+    });
+
+    return { grupos: grupos, nao_alocados: naoAlocados };
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Criar dois grupos padrão de exemplo
+    criarCardGrupo("Grupo 1");
+    criarCardGrupo("Grupo 2");
+
+    atualizarContadorAlunos();
+
+    // Botão novo grupo
+    document.getElementById("btn-novo-grupo").addEventListener("click", () => {
+      criarCardGrupo();
+    });
+
+    // Delegação de eventos para botões dentro dos grupos
+    document
+      .getElementById("area-grupos")
+      .addEventListener("click", (event) => {
+        const target = event.target;
+
+        // Adicionar selecionados
+        if (target.classList.contains("btn-add-selecionados")) {
+          const card = target.closest(".group-card");
+          adicionarSelecionadosAoGrupo(card);
+        }
+
+        // Remover grupo inteiro
+        if (target.classList.contains("btn-remover-grupo")) {
+          const card = target.closest(".group-card");
+          const membros = card.querySelectorAll(".group-members li");
+          const tbody = document.querySelector("#tabela-alunos tbody");
+
+          // Devolver membros para lista de alunos
+          membros.forEach((li) => {
+            const matricula = li.dataset.matricula;
+            const nome = li.dataset.nome;
+            const tr = document.createElement("tr");
+            tr.dataset.matricula = matricula;
+            tr.dataset.nome = nome;
+            tr.innerHTML = `
+            <td><input type="checkbox" class="form-check-input aluno-checkbox"></td>
+            <td>${matricula}</td>
+            <td>${nome}</td>
+          `;
+            tbody.appendChild(tr);
+          });
+
+          card.parentElement.remove();
+          atualizarContadorAlunos();
+        }
+
+        // Remover membro de um grupo (voltando para lista)
+        if (target.classList.contains("btn-remover-membro")) {
+          const li = target.closest("li");
+          const card = target.closest(".group-card");
+          const matricula = li.dataset.matricula;
+          const nome = li.dataset.nome;
+
+          const tbody = document.querySelector("#tabela-alunos tbody");
+          const tr = document.createElement("tr");
+          tr.dataset.matricula = matricula;
+          tr.dataset.nome = nome;
+          tr.innerHTML = `
+          <td><input type="checkbox" class="form-check-input aluno-checkbox"></td>
+          <td>${matricula}</td>
+          <td>${nome}</td>
+        `;
+          tbody.appendChild(tr);
+
+          li.remove();
+          atualizarContadorAlunos();
+          atualizarContadorMembros(card);
+        }
+      });
+
+    // Botão limpar selecionados
+    document
+      .getElementById("btn-limpar-selecionados")
+      .addEventListener("click", () => {
+        document
+          .querySelectorAll(".aluno-checkbox")
+          .forEach((cb) => (cb.checked = false));
+      });
+
+    // Botão salvar grupos
+    document
+      .getElementById("btn-salvar-grupos")
+      .addEventListener("click", () => {
+        const payload = montarPayloadGrupos();
+
+        if (payload.grupos.length === 0) {
+          alert("Nenhum grupo com membros foi definido.");
+          return;
+        }
+
+        fetch("{{ url_for('salvar_grupos', turma_id=turma_id) }}", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then((resp) => resp.json())
+          .then((data) => {
+            if (data.ok && data.redirect) {
+              window.location.href = data.redirect;
+            } else {
+              alert("Erro ao salvar grupos.");
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("Erro ao comunicar com o servidor.");
+          });
+      });
+  });
+</script>
+{% endblock %}
