@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import List, Dict, Any
+import os
 
 import pdfplumber
 import pandas as pd
@@ -49,6 +50,13 @@ class Aluno:
 
 
 # ================== FUNÇÕES DE CAMINHO POR TURMA / COMBO ==================
+@app.route("/favicon.ico")
+def favicon():
+    return send_from_directory(
+        os.path.join(app.root_path, "static"),
+        "favicon.ico",
+        mimetype="img/icon.svg",
+    )
 
 
 def caminhos_turma(turma_id: str):
