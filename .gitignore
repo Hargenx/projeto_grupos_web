@@ -2,3 +2,6 @@
 __pycache__
 .qodo
 .vscode
+.pdfs
+data
+*.pdf
