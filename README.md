@@ -1,16 +1,16 @@
 # Organizador de Grupos a partir de Diários em PDF
 
-Aplicação web em --Flask-- que:
+Aplicação web em *Flask* que:
 
-- Lê diários de classe em --PDF-- (um arquivo por turma);
-- Extrai --matrícula-- e --nome-- dos alunos;
-- Permite montar --grupos manualmente por turma--;
-- Permite combinar --várias turmas-- e formar grupos mistos entre elas;
-- Exporta os grupos formados em --CSV--, --XLSX-- e --JSON--.
+- Lê diários de classe em *PDF* (um arquivo por turma);
+- Extrai *matrícula* e *nome* dos alunos;
+- Permite montar *grupos manualmente por turma*;
+- Permite combinar *várias turmas* e formar grupos mistos entre elas;
+- Exporta os grupos formados em *CSV*, *XLSX* e *JSON*.
 
 Pensado para uso em sala de aula, para facilitar a criação de equipes de trabalho a partir das pautas oficiais.
 
----
+--
 
 ## 📂 Estrutura do projeto
 
@@ -48,24 +48,24 @@ projeto_grupos_web/
 ````
 
 - A aplicação considera `src/` como diretório base (por causa do `BASE_DIR = Path(__file__).resolve().parent` no `app.py`).
-- Os --PDFs-- ficam em `src/pdfs/`.
+- Os *PDFs* ficam em `src/pdfs/`.
 - Os dados gerados ficam em `src/data/`:
 
   - Uma pasta por turma (`data/<TURMA_ID>/`).
   - Combinações de turmas em `data/_combos/<combo_id>/`.
 
----
+--
 
 ## 🧰 Tecnologias utilizadas
 
-- --Python 3.10+-- (testado em 3.11)
+- *Python 3.10+* (testado em 3.11)
 - [Flask](https://flask.palletsprojects.com/)
 - [pdfplumber](https://github.com/jsvine/pdfplumber) – extração de texto do PDF
 - [pandas](https://pandas.pydata.org/) – manipulação de dados e exportações
 - [openpyxl](https://openpyxl.readthedocs.io/) – geração de planilhas `.xlsx`
-- --Bootstrap 5-- (via CDN) – interface web responsiva
+- *Bootstrap 5* (via CDN) – interface web responsiva
 
----
+--
 
 ## 📦 Instalação
 
@@ -93,7 +93,7 @@ projeto_grupos_web/
    - `src/pdfs/` (vazia ou com seus PDFs)
    - `src/data/` (será preenchida automaticamente)
 
----
+--
 
 ## 📄 Padrão esperado dos PDFs
 
@@ -111,7 +111,7 @@ O código foi pensado para diários em um formato padronizado, com:
   <MATRÍCULA> <NOME COMPLETO> ... <colunas de presença: B, P, F, A, "-">
   ```
 
-- Ao final da lista de alunos --ativos--, uma linha com:
+- Ao final da lista de alunos *ativos*, uma linha com:
 
   ```text
   ALUNOS EXCLUÍDOS DA TURMA
@@ -129,7 +129,7 @@ A partir disso, o sistema:
 
 Se o layout do PDF mudar muito, pode ser necessário ajustar a função `extrair_alunos_do_pdf` no `app.py`.
 
----
+--
 
 ## ▶️ Como executar
 
@@ -147,7 +147,7 @@ http://127.0.0.1:5000/
 
 Abra esse endereço no navegador.
 
----
+--
 
 ## 🧑‍🏫 Fluxo de uso – Turmas individuais
 
@@ -160,13 +160,13 @@ Abra esse endereço no navegador.
    └─ SI_2025_1_Noite.pdf
    ```
 
-   O --nome do arquivo sem `.pdf`-- será o `turma_id`:
+   O *nome do arquivo sem `.pdf`* será o `turma_id`:
 
    - `ADS_2025_1_Noite`
    - `ADS_2025_1_Manha`
    - `SI_2025_1_Noite`
 
-2. Acesse a --página inicial-- (`/`):
+2. Acesse a *página inicial* (`/`):
 
    - Você verá a lista de turmas detectadas (um PDF = uma turma).
    - Para cada turma aparecem:
@@ -175,13 +175,13 @@ Abra esse endereço no navegador.
      - se o PDF foi encontrado
      - quantos alunos já estão carregados
 
-3. Clique em --“🔄 Atualizar alunos”-- em uma turma:
+3. Clique em *“🔄 Atualizar alunos”* em uma turma:
 
    - O sistema lê o PDF correspondente;
    - Extrai matrícula e nome;
    - Salva em `data/<TURMA_ID>/alunos.json`.
 
-4. Clique em --“👥 Grupos da turma”--:
+4. Clique em *“👥 Grupos da turma”*:
 
    - Leva para `/grupos/<turma_id>`.
    - À esquerda: todos os alunos sem grupo.
@@ -190,7 +190,7 @@ Abra esse endereço no navegador.
 5. Para montar grupos:
 
    - Marque os alunos desejados na tabela da esquerda;
-   - Clique em --“Adicionar selecionados”-- no grupo desejado;
+   - Clique em *“Adicionar selecionados”* no grupo desejado;
    - Os alunos saem da lista de “sem grupo” e entram no grupo escolhido;
    - Você pode:
 
@@ -199,7 +199,7 @@ Abra esse endereço no navegador.
      - Remover um aluno do grupo (ele volta para a lista à esquerda);
      - Excluir um grupo (todos os alunos do grupo voltam para a lista).
 
-6. Quando terminar, clique em --“💾 Salvar grupos e gerar arquivos”--:
+6. Quando terminar, clique em *“💾 Salvar grupos e gerar arquivos”*:
 
    - O sistema gera:
 
@@ -211,7 +211,7 @@ Abra esse endereço no navegador.
      - Os grupos são exibidos na tela;
      - Há botões para baixar CSV/XLSX/JSON.
 
----
+--
 
 ## 🔗 Fluxo de uso – Combinação de turmas
 
@@ -219,7 +219,7 @@ Abra esse endereço no navegador.
 
 1. Na página inicial (`/`):
 
-   - Use as --checkboxes-- na coluna “Combinar” para marcar as turmas que deseja misturar.
+   - Use as *checkboxes* na coluna “Combinar” para marcar as turmas que deseja misturar.
    - Clique no botão:
 
      ```text
@@ -228,7 +228,7 @@ Abra esse endereço no navegador.
 
 2. Isso leva para `/grupos-combinados?turmas=TurmaA&turmas=TurmaB&...`:
 
-   - À esquerda aparecem --todos os alunos das turmas selecionadas--, com:
+   - À esquerda aparecem *todos os alunos das turmas selecionadas*, com:
 
      - Matrícula
      - Nome
@@ -260,7 +260,7 @@ Abra esse endereço no navegador.
      - Cada aluno aparece com sua turma de origem;
      - Há botões para baixar CSV/XLSX/JSON do combo.
 
----
+--
 
 ## 📑 Formato dos arquivos gerados
 
@@ -291,13 +291,13 @@ Isso facilita:
 - Registrar notas por grupo;
 - Importar para outras planilhas/sistemas.
 
----
+--
 
 ## 🛠️ Personalização
 
 Alguns pontos que você pode adaptar no código (`src/app.py`):
 
-- --Padrão de leitura do PDF--
+- *Padrão de leitura do PDF*
   Função: `extrair_alunos_do_pdf(pdf_path: Path)`
 
   - Ajustar a linha de detecção do cabeçalho:
@@ -308,32 +308,32 @@ Alguns pontos que você pode adaptar no código (`src/app.py`):
     - `"ALUNOS EXCLUÍDOS DA TURMA"`
   - Ajustar o regex da matrícula se o formato for diferente.
 
-- --Nomes de pastas e IDs de turmas--
-  Hoje, o `turma_id` vem do --nome do arquivo PDF sem a extensão--.
+- *Nomes de pastas e IDs de turmas*
+  Hoje, o `turma_id` vem do *nome do arquivo PDF sem a extensão*.
   Você pode mudar a lógica para puxar o nome da turma de dentro do próprio PDF, caso exista essa informação.
 
-- --Estilo da interface--
+- *Estilo da interface*
   Os templates HTML (em `src/templates/`) usam Bootstrap 5 com um tema escuro básico.
   Você pode trocar cores, fontes e layout como quiser.
 
----
+--
 
 ## ❓ Dúvidas e problemas comuns
 
-- --Página inicial não mostra nenhuma turma--
+- *Página inicial não mostra nenhuma turma*
   → Verifique se os PDFs estão dentro de `src/pdfs/` e têm extensão `.pdf`.
 
-- --Nenhum aluno carregado para a turma--
+- *Nenhum aluno carregado para a turma*
   → Clique em “Atualizar alunos” para aquela turma.
   → Se continuar vazio, provavelmente o layout do PDF está diferente do esperado — revise `extrair_alunos_do_pdf`.
 
-- --Erro ao abrir o app--
+- *Erro ao abrir o app*
   → Confira se as dependências foram instaladas (`flask`, `pdfplumber`, `pandas`, `openpyxl`).
   → Verifique a versão do Python (recomendado 3.10+).
 
----
+--
 
 ## 👤 Autor / Créditos
 
-- --Projeto didático de organização de grupos a partir de pautas em PDF--
+- *Projeto didático de organização de grupos a partir de pautas em PDF*
 - Desenvolvido para facilitar a vida do(a) docente na hora de dividir turmas em equipes de trabalho.
